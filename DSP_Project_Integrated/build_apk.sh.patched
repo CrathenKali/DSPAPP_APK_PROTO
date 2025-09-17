@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+set -e
+echo "Starting build script..."
+
+# Allow overriding environment vars from caller
+: "${ANDROID_SDK_ROOT:=${HOME}/Android/Sdk}"
+: "${ANDROID_NDK_ROOT:=${HOME}/Android/Sdk/ndk/23.1.7779620}"
+
+echo "Using ANDROID_SDK_ROOT=${ANDROID_SDK_ROOT}"
+echo "Using ANDROID_NDK_ROOT=${ANDROID_NDK_ROOT}"
+
+# Ensure buildozer exists
+command -v buildozer >/dev/null 2>&1 || { echo "buildozer not found in PATH. Install with pip install buildozer"; exit 1; }
+
+case "$1" in
+    full)
+        buildozer android debug
+        ;;
+    build)
+        buildozer android debug
+        ;;
+    clean)
+        buildozer android clean
+        ;;
+    deploy)
+        # Deploy via ADB if available, otherwise copy APK to sdcard
+        APK=$(ls bin/*.apk 2>/dev/null | tail -n1 || true)
+        if [ -z "$APK" ]; then
+            echo "No APK found in bin/; run build first."
+            exit 1
+        fi
+        if command -v adb >/dev/null 2>&1; then
+            adb install -r "$APK"
+        else
+            # copy to /mnt/data for WSL or to user's home for local builds
+            mkdir -p /mnt/sdcard_downloads || true
+            cp "$APK" /mnt/sdcard_downloads/
+            echo "APK copied to /mnt/sdcard_downloads/ (copy manually to SD card or device)"
+        fi
+        ;;
+    *)
+        echo "Usage: $0 {build|deploy|clean|full}"
+        exit 1
+        ;;
+esac

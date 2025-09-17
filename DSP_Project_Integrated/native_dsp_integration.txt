@@ -1,0 +1,8 @@
+Integration steps (automated):
+1. Copy the 'native_dsp' directory into your project root (already here).
+2. On Linux/WSL run: ./native_dsp/build_native.sh to build .so for ABIs.
+3. Or run the automated script from project root: ./build_apk.sh.patched2 full
+   - This builds native libs, copies them into jniLibs/, then runs buildozer.
+4. Ensure ANDROID_NDK_ROOT and ANDROID_SDK_ROOT are set in your environment.
+5. The build puts .so into jniLibs/<abi>/libnative_dsp.so so Buildozer will include it.
+6. Test on device. For performance replace kiss_fft prototype with optimized FFT and implement DSP filters.

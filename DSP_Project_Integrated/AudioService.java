@@ -1,0 +1,396 @@
+package org.dspproject.caraudiodsp;
+
+import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
+import android.app.Service;
+import android.content.Context;
+import android.content.Intent;
+import android.media.AudioAttributes;
+import android.media.AudioDeviceInfo;
+import android.media.AudioFormat;
+import android.media.AudioManager;
+import android.media.AudioRecord;
+import android.media.AudioTrack;
+import android.media.MediaRecorder;
+import android.os.Binder;
+import android.os.Build;
+import android.os.IBinder;
+import android.util.Log;
+import androidx.core.app.NotificationCompat;
+
+/**
+
+- Background audio service for DSP processing
+- Handles external 3.5mm microphone input and real-time processing
+  */
+  public class AudioService extends Service {
+  private static final String TAG = “DSP_AudioService”;
+  private static final String CHANNEL_ID = “DSP_AUDIO_CHANNEL”;
+  private static final int NOTIFICATION_ID = 1;
+  
+  // Audio configuration
+  private static final int SAMPLE_RATE = 44100;
+  private static final int BUFFER_SIZE = 4096;
+  private static final int CHANNEL_CONFIG = AudioFormat.CHANNEL_IN_MONO;
+  private static final int AUDIO_FORMAT = AudioFormat.ENCODING_PCM_16BIT;
+  
+  // Audio objects
+  private AudioManager audioManager;
+  private AudioRecord audioRecord;
+  private AudioTrack audioTrack;
+  private Thread recordingThread;
+  private volatile boolean isRecording = false;
+  
+  // Binder for activity communication
+  private final IBinder binder = new AudioServiceBinder();
+  
+  // Audio data callback interface
+  public interface AudioDataCallback {
+  void onAudioData(short[] audioData, int length);
+  void onRMSLevel(float rmsLevel);
+  void onPeakLevel(float peakLevel);
+  }
+  
+  private AudioDataCallback audioDataCallback;
+  
+  public class AudioServiceBinder extends Binder {
+  public AudioService getService() {
+  return AudioService.this;
+  }
+  }
+  
+  @Override
+  public void onCreate() {
+  super.onCreate();
+  Log.i(TAG, “AudioService created”);
+  
+  ```
+   audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+   createNotificationChannel();
+   setupAudioRouting();
+  ```
+  
+  }
+  
+  @Override
+  public int onStartCommand(Intent intent, int flags, int startId) {
+  Log.i(TAG, “AudioService started”);
+  
+  ```
+   // Start foreground service with notification
+   startForeground(NOTIFICATION_ID, createNotification());
+   
+   // Initialize audio recording
+   if (initializeAudioRecord()) {
+       startRecording();
+   } else {
+       Log.e(TAG, "Failed to initialize AudioRecord");
+       stopSelf();
+   }
+   
+   return START_STICKY; // Restart if killed
+  ```
+  
+  }
+  
+  @Override
+  public IBinder onBind(Intent intent) {
+  return binder;
+  }
+  
+  @Override
+  public void onDestroy() {
+  super.onDestroy();
+  Log.i(TAG, “AudioService destroyed”);
+  stopRecording();
+  releaseAudioResources();
+  }
+  
+  /**
+  - Setup audio routing to prefer external 3.5mm microphone
+    */
+    private void setupAudioRouting() {
+    try {
+    // Set audio mode for communication (enables external mic)
+    audioManager.setMode(AudioManager.MODE_IN_COMMUNICATION);
+    
+    ```
+     // Disable speakerphone to force external audio routing
+     audioManager.setSpeakerphoneOn(false);
+     
+     // Force wired headset routing (3.5mm input)
+     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+         AudioDeviceInfo[] devices = audioManager.getDevices(AudioManager.GET_DEVICES_INPUTS);
+         
+         for (AudioDeviceInfo device : devices) {
+             Log.d(TAG, "Available input device: " + device.getType() + 
+                   " - " + device.getProductName());
+             
+             // Look for wired headset or external mic
+             if (device.getType() == AudioDeviceInfo.TYPE_WIRED_HEADSET ||
+                 device.getType() == AudioDeviceInfo.TYPE_WIRED_HEADPHONES ||
+                 device.getType() == AudioDeviceInfo.TYPE_AUX_LINE) {
+                 Log.i(TAG, "Found external audio input: " + device.getProductName());
+             }
+         }
+     }
+     
+     Log.i(TAG, "Audio routing configured for external microphone");
+    ```
+    
+    } catch (Exception e) {
+    Log.e(TAG, “Failed to setup audio routing”, e);
+    }
+    }
+  
+  /**
+  - Initialize AudioRecord with optimal settings for external mic
+    */
+    private boolean initializeAudioRecord() {
+    try {
+    // Calculate minimum buffer size
+    int minBufferSize = AudioRecord.getMinBufferSize(SAMPLE_RATE, CHANNEL_CONFIG, AUDIO_FORMAT);
+    
+    ```
+     if (minBufferSize == AudioRecord.ERROR_BAD_VALUE || minBufferSize == AudioRecord.ERROR) {
+         Log.e(TAG, "Invalid AudioRecord configuration");
+         return false;
+     }
+     
+     int bufferSize = Math.max(BUFFER_SIZE, minBufferSize * 2);
+     
+     // Try different audio sources to find the best one for external mic
+     int[] audioSources = {
+         MediaRecorder.AudioSource.UNPROCESSED,     // Raw audio, best for analysis
+         MediaRecorder.AudioSource.MIC,             // Standard microphone
+         MediaRecorder.AudioSource.VOICE_COMMUNICATION, // Communication optimized
+         MediaRecorder.AudioSource.VOICE_RECOGNITION    // Recognition optimized
+     };
+     
+     for (int audioSource : audioSources) {
+         try {
+             audioRecord = new AudioRecord(audioSource, SAMPLE_RATE, CHANNEL_CONFIG, 
+                                          AUDIO_FORMAT, bufferSize);
+             
+             if (audioRecord.getState() == AudioRecord.STATE_INITIALIZED) {
+                 Log.i(TAG, "AudioRecord initialized with source: " + audioSource);
+                 return true;
+             } else {
+                 audioRecord.release();
+                 audioRecord = null;
+             }
+         } catch (SecurityException e) {
+             Log.w(TAG, "Security exception for audio source " + audioSource);
+         } catch (Exception e) {
+             Log.w(TAG, "Failed to initialize audio source " + audioSource, e);
+         }
+     }
+     
+     Log.e(TAG, "Failed to initialize any audio source");
+     return false;
+    ```
+    
+    } catch (Exception e) {
+    Log.e(TAG, “AudioRecord initialization failed”, e);
+    return false;
+    }
+    }
+  
+  /**
+  - Start audio recording and processing
+    */
+    private void startRecording() {
+    if (audioRecord == null || isRecording) {
+    return;
+    }
+    
+    try {
+    audioRecord.startRecording();
+    isRecording = true;
+    
+    ```
+     recordingThread = new Thread(this::recordingLoop);
+     recordingThread.setPriority(Thread.MAX_PRIORITY);
+     recordingThread.start();
+     
+     Log.i(TAG, "Audio recording started");
+    ```
+    
+    } catch (Exception e) {
+    Log.e(TAG, “Failed to start recording”, e);
+    isRecording = false;
+    }
+    }
+  
+  /**
+  - Stop audio recording
+    */
+    private void stopRecording() {
+    isRecording = false;
+    
+    if (recordingThread != null && recordingThread.isAlive()) {
+    try {
+    recordingThread.join(1000); // Wait up to 1 second
+    } catch (InterruptedException e) {
+    Thread.currentThread().interrupt();
+    }
+    }
+    
+    if (audioRecord != null) {
+    try {
+    audioRecord.stop();
+    Log.i(TAG, “Audio recording stopped”);
+    } catch (Exception e) {
+    Log.e(TAG, “Error stopping audio record”, e);
+    }
+    }
+    }
+  
+  /**
+  - Main recording loop - processes audio data in real-time
+    */
+    private void recordingLoop() {
+    short[] audioBuffer = new short[BUFFER_SIZE];
+    
+    while (isRecording && audioRecord != null) {
+    try {
+    int bytesRead = audioRecord.read(audioBuffer, 0, BUFFER_SIZE);
+    
+    ```
+         if (bytesRead > 0) {
+             // Calculate RMS and peak levels
+             float rms = calculateRMS(audioBuffer, bytesRead);
+             float peak = calculatePeak(audioBuffer, bytesRead);
+             
+             // Send data to callback if registered
+             if (audioDataCallback != null) {
+                 audioDataCallback.onAudioData(audioBuffer, bytesRead);
+                 audioDataCallback.onRMSLevel(rms);
+                 audioDataCallback.onPeakLevel(peak);
+             }
+             
+         } else if (bytesRead == AudioRecord.ERROR_INVALID_OPERATION) {
+             Log.e(TAG, "AudioRecord invalid operation");
+             break;
+         } else if (bytesRead == AudioRecord.ERROR_BAD_VALUE) {
+             Log.e(TAG, "AudioRecord bad value");
+             break;
+         }
+         
+         // Small sleep to prevent CPU overload
+         Thread.sleep(1);
+         
+     } catch (Exception e) {
+         Log.e(TAG, "Error in recording loop", e);
+         break;
+     }
+    ```
+    
+    }
+    
+    Log.i(TAG, “Recording loop ended”);
+    }
+  
+  /**
+  - Calculate RMS level for audio data
+    */
+    private float calculateRMS(short[] audioData, int length) {
+    long sum = 0;
+    for (int i = 0; i < length; i++) {
+    sum += audioData[i] * audioData[i];
+    }
+    return (float) Math.sqrt((double) sum / length) / 32768.0f;
+    }
+  
+  /**
+  - Calculate peak level for audio data
+    */
+    private float calculatePeak(short[] audioData, int length) {
+    int maxValue = 0;
+    for (int i = 0; i < length; i++) {
+    int absValue = Math.abs(audioData[i]);
+    if (absValue > maxValue) {
+    maxValue = absValue;
+    }
+    }
+    return maxValue / 32768.0f;
+    }
+  
+  /**
+  - Release audio resources
+    */
+    private void releaseAudioResources() {
+    if (audioRecord != null) {
+    try {
+    audioRecord.release();
+    } catch (Exception e) {
+    Log.e(TAG, “Error releasing AudioRecord”, e);
+    }
+    audioRecord = null;
+    }
+    
+    if (audioTrack != null) {
+    try {
+    audioTrack.release();
+    } catch (Exception e) {
+    Log.e(TAG, “Error releasing AudioTrack”, e);
+    }
+    audioTrack = null;
+    }
+    }
+  
+  /**
+  - Set audio data callback for real-time data
+    */
+    public void setAudioDataCallback(AudioDataCallback callback) {
+    this.audioDataCallback = callback;
+    }
+  
+  /**
+  - Get current recording state
+    */
+    public boolean isRecording() {
+    return isRecording;
+    }
+  
+  /**
+  - Create notification channel for Android O+
+    */
+    private void createNotificationChannel() {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+    NotificationChannel channel = new NotificationChannel(
+    CHANNEL_ID,
+    “DSP Audio Processing”,
+    NotificationManager.IMPORTANCE_LOW
+    );
+    channel.setDescription(“Background audio processing for car DSP”);
+    channel.setSound(null, null);
+    
+    ```
+     NotificationManager notificationManager = getSystemService(NotificationManager.class);
+     notificationManager.createNotificationChannel(channel);
+    ```
+    
+    }
+    }
+  
+  /**
+  - Create foreground service notification
+    */
+    private Notification createNotification() {
+    Intent notificationIntent = new Intent(this, org.kivy.android.PythonActivity.class);
+    PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent,
+    PendingIntent.FLAG_IMMUTABLE);
+    
+    return new NotificationCompat.Builder(this, CHANNEL_ID)
+    .setContentTitle(“Car Audio DSP”)
+    .setContentText(“Processing external microphone input”)
+    .setSmallIcon(android.R.drawable.ic_media_play)
+    .setContentIntent(pendingIntent)
+    .setOngoing(true)
+    .setSilent(true)
+    .build();
+    }
+    }

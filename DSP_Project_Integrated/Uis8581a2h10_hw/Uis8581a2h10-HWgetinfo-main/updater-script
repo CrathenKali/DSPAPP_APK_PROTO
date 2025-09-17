@@ -1,0 +1,96 @@
+getprop("ro.product.device") == "uis8581a2h10" || abort("E3004: This package is for \"uis8581a2h10\" devices; this is a \"" + getprop("ro.product.device") + "\".");
+ui_print("Target: SPRD/uis8581a2h10_Automotive/uis8581a2h10:10/QP1A.190711.020/09412:user/release-keys");
+package_extract_file("META-INF/com/google/android/nvmerge", "/tmp/nvmerge");
+package_extract_file("META-INF/com/google/android/nvmerge.cfg", "/tmp/nvmerge.cfg");
+ui_print("write u-boot-spl-16k.bin to partition /spl ....");
+package_extract_file("u-boot-spl-16k.bin", "/dev/block/mmcblk0boot0");
+ui_print("write u-boot-spl-16k.bin to partition /spl_bk ....");
+package_extract_file("u-boot-spl-16k.bin", "/dev/block/mmcblk0boot1");
+ui_print("write u-boot.bin to partition /uboot ....");
+package_extract_file("u-boot.bin", "/dev/block/platform/soc/soc:ap-ahb/20600000.sdio/by-name/uboot");
+ui_print("write u-boot.bin to partition /uboot_bak ....");
+package_extract_file("u-boot.bin", "/dev/block/platform/soc/soc:ap-ahb/20600000.sdio/by-name/uboot_bak");
+ui_print("write sml.bin to partition /sml ....");
+package_extract_file("sml.bin", "/dev/block/platform/soc/soc:ap-ahb/20600000.sdio/by-name/sml");
+ui_print("write sml.bin to partition /sml_bak ....");
+package_extract_file("sml.bin", "/dev/block/platform/soc/soc:ap-ahb/20600000.sdio/by-name/sml_bak");
+ui_print("write tos.bin to partition /tos ....");
+package_extract_file("tos.bin", "/dev/block/platform/soc/soc:ap-ahb/20600000.sdio/by-name/trustos");
+ui_print("write tos.bin to partition /tos_bak ....");
+package_extract_file("tos.bin", "/dev/block/platform/soc/soc:ap-ahb/20600000.sdio/by-name/trustos_bak");
+ui_print("write teecfg.bin to partition /teecfg ....");
+package_extract_file("teecfg.bin", "/dev/block/platform/soc/soc:ap-ahb/20600000.sdio/by-name/teecfg");
+ui_print("write teecfg.bin to partition /teecfg_bak ....");
+package_extract_file("teecfg.bin", "/dev/block/platform/soc/soc:ap-ahb/20600000.sdio/by-name/teecfg_bak");
+ui_print("write dtbo.img to partition /dtbo ....");
+package_extract_file("dtbo.img", "/dev/block/platform/soc/soc:ap-ahb/20600000.sdio/by-name/dtbo");
+ui_print("write ltedsp.bin to partition /ltedsp ....");
+package_extract_file("ltedsp.bin", "/dev/block/platform/soc/soc:ap-ahb/20600000.sdio/by-name/l_ldsp");
+ui_print("write ltegdsp.bin to partition /ltegdsp ....");
+package_extract_file("ltegdsp.bin", "/dev/block/platform/soc/soc:ap-ahb/20600000.sdio/by-name/l_gdsp");
+ui_print("write ltemodem.bin to partition /ltemodem ....");
+package_extract_file("ltemodem.bin", "/dev/block/platform/soc/soc:ap-ahb/20600000.sdio/by-name/l_modem");
+ui_print("write pmsys.bin to partition /pmsys ....");
+package_extract_file("pmsys.bin", "/dev/block/platform/soc/soc:ap-ahb/20600000.sdio/by-name/pm_sys");
+ui_print("extract ltenvitem.bin to /tmp ....");
+package_extract_file("ltenvitem.bin", "/tmp/ltenvitem.bin");
+assert(run_programex("/tmp/nvmerge","/tmp/nvmerge.cfg","/dev/block/platform/soc/soc:ap-ahb/20600000.sdio/by-name/l_fixnv1","/dev/block/platform/soc/soc:ap-ahb/20600000.sdio/by-name/l_fixnv2","/tmp/ltenvitem.bin","0x100000"));
+ if last_run_status() == "1" then 
+ abort("Failed to do nvmerge!!"); 
+ endif; 
+ui_print("write ltedeltanv.bin to partition /ltedeltanv ....");
+package_extract_file("ltedeltanv.bin", "/dev/block/platform/soc/soc:ap-ahb/20600000.sdio/by-name/l_deltanv");
+ui_print("write wcnmodem.bin to partition /wcnmodem ....");
+package_extract_file("wcnmodem.bin", "/dev/block/platform/soc/soc:ap-ahb/20600000.sdio/by-name/wcnmodem");
+ui_print("write gnssmodem.bin to partition /gnssmodem ....");
+package_extract_file("gnssmodem.bin", "/dev/block/platform/soc/soc:ap-ahb/20600000.sdio/by-name/gpsgl");
+ui_print("write gnssbdmodem.bin to partition /gnssbdmodem ....");
+package_extract_file("gnssbdmodem.bin", "/dev/block/platform/soc/soc:ap-ahb/20600000.sdio/by-name/gpsbd");
+show_progress(0.450000, 0);
+
+# --- Start patching dynamic partitions ---
+
+
+# Update dynamic partition metadata
+
+assert(update_dynamic_partitions(package_extract_file("dynamic_partitions_op_list")));
+
+# Patch partition product
+
+ui_print("Patching product image unconditionally...");
+show_progress(0.100000, 0);
+block_image_update(map_partition("product"), package_extract_file("product.transfer.list"), "product.new.dat.br", "product.patch.dat") ||
+  abort("E2001: Failed to update product image.");
+
+# Patch partition vendor
+
+ui_print("Patching vendor image unconditionally...");
+show_progress(0.100000, 0);
+block_image_update(map_partition("vendor"), package_extract_file("vendor.transfer.list"), "vendor.new.dat.br", "vendor.patch.dat") ||
+  abort("E2001: Failed to update vendor image.");
+
+# Patch partition system
+
+ui_print("Patching system image unconditionally...");
+block_image_update(map_partition("system"), package_extract_file("system.transfer.list"), "system.new.dat.br", "system.patch.dat") ||
+  abort("E1001: Failed to update system image.");
+
+# Patch partition elable
+
+ui_print("Patching elable image unconditionally...");
+show_progress(0.100000, 0);
+block_image_update(map_partition("elable"), package_extract_file("elable.transfer.list"), "elable.new.dat.br", "elable.patch.dat") ||
+  abort("E2001: Failed to update elable image.");
+
+# --- End patching dynamic partitions ---
+
+ui_print("Patching socko image unconditionally...");
+show_progress(0.050000, 0);
+block_image_update("/dev/block/platform/soc/soc:ap-ahb/20600000.sdio/by-name/socko", package_extract_file("socko.transfer.list"), "socko.new.dat.br", "socko.patch.dat") ||
+  abort("E2001: Failed to update socko image.");
+show_progress(0.050000, 5);
+package_extract_file("boot.img", "/dev/block/platform/soc/soc:ap-ahb/20600000.sdio/by-name/boot");
+show_progress(0.200000, 10);
+set_progress(1.000000);
+SetDeviceOemUIRotation("None") == "ok" || abort("E3004: Failed to tune partition ");
+set_progress(1.000000);

@@ -1,0 +1,140 @@
+#:kivy 2.1.0
+
+<BandSlider@BoxLayout>:
+    orientation: 'vertical'
+    size_hint_x: None
+    width: dp(40)
+    Label:
+        text: root.label
+        font_size: '10sp'
+        size_hint_y: None
+        height: dp(18)
+    Slider:
+        id: s
+        orientation: 'vertical'
+        min: -12
+        max: 12
+        value: root.value
+        step: 0.5
+        on_value: app.on_eq_change(root.index, self.value)
+    Label:
+        text: '{:.1f} dB'.format(s.value)
+        font_size: '10sp'
+        size_hint_y: None
+        height: dp(18)
+
+<DSPRoot@BoxLayout>:
+    orientation: 'vertical'
+    padding: dp(8)
+    spacing: dp(8)
+    BoxLayout:
+        size_hint_y: None
+        height: dp(48)
+        spacing: dp(8)
+        Label:
+            text: 'DSP Headunit'
+            bold: True
+            font_size: '18sp'
+        Button:
+            text: 'Presets'
+            size_hint_x: None
+            width: dp(100)
+            on_release: app.open_presets()
+        Button:
+            text: 'Save'
+            size_hint_x: None
+            width: dp(100)
+            on_release: app.save_config()
+    BoxLayout:
+        spacing: dp(8)
+        BoxLayout:
+            orientation: 'vertical'
+            size_hint_x: .7
+            canvas.before:
+                Color:
+                    rgba: .08, .08, .08, 1
+                Rectangle:
+                    pos: self.pos
+                    size: self.size
+            Label:
+                text: '31-Band Graphic EQ'
+                size_hint_y: None
+                height: dp(28)
+            ScrollView:
+                do_scroll_x: True
+                do_scroll_y: False
+                GridLayout:
+                    id: eq_grid
+                    cols: 31
+                    size_hint_x: None
+                    width: self.minimum_width
+            Label:
+                text: 'Real-time Analyzer (placeholder)'
+                size_hint_y: None
+                height: dp(28)
+            Widget:
+                id: analyzer
+                canvas:
+                    Color:
+                        rgba: 0.2,0.6,0.9,1
+                    Rectangle:
+                        pos: self.pos
+                        size: self.size
+        BoxLayout:
+            orientation: 'vertical'
+            size_hint_x: .3
+            spacing: dp(6)
+            BoxLayout:
+                size_hint_y: None
+                height: dp(40)
+                Label:
+                    text: 'Input'
+                Spinner:
+                    id: input_spinner
+                    text: 'AUTO'
+                    values: ['AUTO','MIC','UNPROCESSED','VOICE_COMMUNICATION']
+                    on_text: app.on_input_mode(self.text)
+            BoxLayout:
+                size_hint_y: None
+                height: dp(40)
+                Label:
+                    text: 'Gain'
+                Slider:
+                    id: gain_slider
+                    min: -12
+                    max: 12
+                    value: 0
+                    step: 0.5
+                    on_value: app.on_gain(self.value)
+            BoxLayout:
+                size_hint_y: None
+                height: dp(40)
+                Label:
+                    text: 'Delay (ms)'
+                Slider:
+                    id: delay_slider
+                    min: 0
+                    max: 500
+                    value: 0
+                    step: 1
+                    on_value: app.on_delay(self.value)
+            Label:
+                text: 'Channel Controls'
+                size_hint_y: None
+                height: dp(24)
+            GridLayout:
+                cols: 2
+                size_hint_y: None
+                height: dp(120)
+                Button:
+                    text: 'Front L'
+                    on_release: app.select_channel('frontLeft')
+                Button:
+                    text: 'Front R'
+                    on_release: app.select_channel('frontRight')
+                Button:
+                    text: 'Rear L'
+                    on_release: app.select_channel('rearLeft')
+                Button:
+                    text: 'Rear R'
+                    on_release: app.select_channel('rearRight')

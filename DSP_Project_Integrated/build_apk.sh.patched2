@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+set -e
+echo "Automated build: build native libs, package into APK, build via buildozer"
+: "${ANDROID_NDK_ROOT:=${HOME}/Android/Sdk/ndk/23.1.7779620}"
+: "${PROJECT_ROOT:=$(pwd)}"
+NATIVE_DIR="$PROJECT_ROOT/native_dsp"
+OUTPUT_JNI="$NATIVE_DIR/output_jniLibs"
+# Build native libs
+echo "Building native libs..."
+pushd "$NATIVE_DIR"
+./build_native.sh
+popd
+# Copy jni libs into project jniLibs for buildozer packaging
+echo "Copying .so into jniLibs directory"
+mkdir -p "$PROJECT_ROOT/jniLibs"
+for abi in arm64-v8a armeabi-v7a; do
+  mkdir -p "$PROJECT_ROOT/jniLibs/$abi"
+  cp "$OUTPUT_JNI/$abi/libnative_dsp.so" "$PROJECT_ROOT/jniLibs/$abi/libnative_dsp.so"
+done
+# Ensure buildozer spec includes android.add_jni_libs = jniLibs
+# Run buildozer
+echo "Running buildozer..."
+buildozer android debug
+echo "Build complete. APK in bin/"

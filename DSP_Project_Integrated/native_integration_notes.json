@@ -1,0 +1,14 @@
+{
+  "audio_service_java": "/mnt/data/AudioService.java.patched3",
+  "native_cpp": "/mnt/data/native_dsp/native_dsp.cpp",
+  "cmake": "/mnt/data/native_dsp/CMakeLists.txt",
+  "build_script": "/mnt/data/native_dsp/build_native.sh",
+  "integration": [
+    "Place 'native_dsp' directory into your project (e.g., app/jni or project root).",
+    "Use Android NDK with CMake to build the shared library for desired ABIs (arm64-v8a, armeabi-v7a).",
+    "Copy built lib (.so) into APK jniLibs/<ABI>/native_dsp.so or configure Gradle to build it.",
+    "Ensure buildozer.spec includes android.add_jni_libs or android.gradle to include native libs.",
+    "The Java class AudioService declares native methods and calls them on control events.",
+    "Currently native code writes fake spectrum JSON; replace with real FFT (KISS FFT or FFTW port) for quality analysis."
+  ]
+}

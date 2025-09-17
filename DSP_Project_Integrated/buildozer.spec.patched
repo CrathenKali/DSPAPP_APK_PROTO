@@ -1,0 +1,45 @@
+[app]
+title = DSP Headunit
+package.name = dspheadunit
+package.domain = org.crathenkali
+source.dir = .
+source.include_exts = py,kv,java,xml,json
+version = 0.1
+orientation = landscape
+android.arch = armeabi-v7a, arm64-v8a
+# Use API 29 for automotive headunits compatibility
+android.api = 29
+android.minapi = 21
+# Use recent NDK that's widely compatible on CI/PC builds
+android.ndk = 23b
+requirements = python3,kivy==2.1.0,pyjnius,numpy,cython==0.29.33
+# Preserves the AndroidManifest template you uploaded
+android.manifest = AndroidManifest.tmpl.xml
+# Include Java sources so Buildozer compiles AudioService.java
+android.add_src = AudioService.java
+# Permissions needed for external mic, routing, background service
+android.permissions = RECORD_AUDIO, MODIFY_AUDIO_SETTINGS, BLUETOOTH, WRITE_EXTERNAL_STORAGE, READ_EXTERNAL_STORAGE, FOREGROUND_SERVICE, WAKE_LOCK
+# Add extra gradle dependencies if needed (left blank - update if using support libs)
+# android.gradle_dependencies = com.android.support:appcompat-v7:28.0.0
+# Keep the app running in background when service is active
+android.minimal_jni = False
+
+# Packaging and signing (for release specify key)
+android.release = False
+
+# Debuggable
+android.debug = True
+
+# Allow a custom Java source directory if you prefer placing the java file inside src/
+# android.add_src = src/main/java
+
+# Buildozer-specific options
+log_level = 2
+warn_on_root = 1
+
+[buildozer]
+# Path to Android SDK/NDK when building locally
+# You can set these environment variables in your build script:
+# ANDROID_SDK_ROOT, ANDROID_NDK_ROOT, PATH (to include sdk tools)
+# Include prebuilt native libs copied into jniLibs/
+android.add_jni_libs = jniLibs

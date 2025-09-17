@@ -1,0 +1,20 @@
+# Remove all existing dynamic partitions and groups before applying full OTA
+remove_all_groups
+# Add group group_unisoc with maximum size 4299161600
+add_group group_unisoc 4299161600
+# Add partition product to group group_unisoc
+add product group_unisoc
+# Add partition vendor to group group_unisoc
+add vendor group_unisoc
+# Add partition system to group group_unisoc
+add system group_unisoc
+# Add partition elable to group group_unisoc
+add elable group_unisoc
+# Grow partition product from 0 to 1143713792
+resize product 1143713792
+# Grow partition vendor from 0 to 324210688
+resize vendor 324210688
+# Grow partition system from 0 to 1159520256
+resize system 1159520256
+# Grow partition elable from 0 to 52436992
+resize elable 52436992
