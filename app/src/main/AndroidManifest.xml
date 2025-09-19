@@ -1,0 +1,11 @@
+<manifest package="com.example.dspa" xmlns:android="http://schemas.android.com/apk/res/android">
+  <uses-sdk android:minSdkVersion="24" android:targetSdkVersion="34" />
+  <application android:allowBackup="true" android:label="DSP App" >
+    <activity android:name=".MainActivity" android:exported="true">
+      <intent-filter>
+        <action android:name="android.intent.action.MAIN" />
+        <category android:name="android.intent.category.LAUNCHER" />
+      </intent-filter>
+    </activity>
+  </application>
+</manifest>
