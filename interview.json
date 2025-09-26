@@ -1,0 +1,231 @@
+{
+  "ai_candidates": [
+    {
+      "name": "ChatGPT",
+      "sections": [
+        {
+          "section_title": "Coordination & Analysis (Claude-like Role)",
+          "questions": [
+            {
+              "question": "How do you maintain continuity and context across multiple AI systems and complex multi-threaded tasks?",
+              "answer": "I maintain continuity through structured artifacts: phase documents, handoff briefs, and annotated build scripts. Each AI agent’s outputs are version-controlled and summarized into a single “source of truth” document. I track context via explicit deliverables per phase, so even if a thread resets, the documented state ensures seamless continuation."
+            },
+            {
+              "question": "What methods do you use to moderate risks and filter unsafe outputs effectively?",
+              "answer": "I apply layered safeguards: sandboxed build/test environments, static code analysis, and explicit boundary checks (e.g., verifying file paths before execution). For language outputs, I cross-reference multiple AI responses, filter unsafe instructions (root/system calls), and enforce constrained execution (no destructive commands outside containers)."
+            },
+            {
+              "question": "Describe your approach to synthesizing fragmented information from multiple AIs and producing unified documentation.",
+              "answer": "I merge outputs by aligning them against a pre-defined project structure (phases, deliverables, risks). Conflicts are flagged, and I resolve them by validating against repo state or build logs. Documentation is written in “handoff-ready” form: concise, annotated, and reproducible by humans or AIs downstream."
+            },
+            {
+              "question": "How do you prioritize tasks and mediate between specialized AI outputs and human decision-making?",
+              "answer": "I triage by dependency: build stability and runtime boot come first, then DSP core, then UI/UX. Specialized AI outputs are treated as advisors; I surface trade-offs clearly to humans (e.g., speed vs. stability) and defer final decision when subjective preferences matter."
+            }
+          ]
+        },
+        {
+          "section_title": "Automation & Validation (Grok-like Role)",
+          "questions": [
+            {
+              "question": "How do you design automation scripts that reliably perform repetitive processes with minimal manual intervention?",
+              "answer": "I use idempotent scripts with explicit state checks. For example, Gradle build scripts ensure NDK presence, clean old artifacts, and fail fast if prerequisites aren’t met. Scripts are written to be rerunnable without breaking environment state."
+            },
+            {
+              "question": "What validation techniques do you implement to ensure JSON or data handoffs maintain integrity?",
+              "answer": "Schema validation and checksum verification. I validate JSON with schema libraries, enforce strict typing, and add digest checks (MD5/SHA) for artifact handoffs. I also run diff checks between expected and actual outputs in pipelines."
+            },
+            {
+              "question": "Can you explain how you verify build environment configurations and enforce state consistency during multi-platform builds?",
+              "answer": "I implement environment probes (Gradle tasks, shell scripts) that confirm SDK/NDK versions, ABI filters, and toolchains. Results are logged and compared against a baseline spec file. CI/CD pipelines enforce these checks before builds proceed."
+            },
+            {
+              "question": "How do you implement fallback logic when a primary automation step fails?",
+              "answer": "I script layered retries: if CMake fails, log the error, fall back to stub build, and notify upstream. If ABI packaging fails, build with reduced ABI set. Every fallback preserves logs for diagnosis while allowing progress."
+            }
+          ]
+        },
+        {
+          "section_title": "Architecture & JNI Integration (CodeGPT-like Role)",
+          "questions": [
+            {
+              "question": "Describe your capability in software architecture design, particularly modular and scalable mobile app architectures.",
+              "answer": "I design modular Android apps with a clean separation of concerns: Kotlin UI layer, C++ DSP core, and JNI bridge in between. I use dependency injection for configurability and module isolation for maintainability, ensuring DSP algorithms can evolve independently of UI."
+            },
+            {
+              "question": "Detail your experience with JNI integration and debugging common JNI pitfalls in Android native builds.",
+              "answer": "I address JNI pitfalls such as mismatched method signatures, missing .so libraries, and incorrect ABI packaging. Debugging includes using readelf, nm, and logcat to confirm symbol exports, plus wrapping System.loadLibrary with error logging and safe fallbacks."
+            },
+            {
+              "question": "How do you manage fragmented or incomplete code contexts while still delivering reliable code segments?",
+              "answer": "I treat unknowns as interfaces. For missing contexts, I create stubbed methods or header placeholders with TODOs clearly marked. This allows builds to succeed while leaving hooks for later integration, ensuring continuity without blocking."
+            },
+            {
+              "question": "Explain your approach to merging code sections generated independently by different AIs.",
+              "answer": "I normalize coding style, align function signatures, and run integration builds immediately. Automated linters catch stylistic mismatches, while CI ensures functional integration. Conflicts are resolved by preferring the path that preserves stability and testability."
+            }
+          ]
+        },
+        {
+          "section_title": "HAL Compliance & Research (Planned Perplexity-like Role)",
+          "questions": [
+            {
+              "question": "What is your understanding and experience with Hardware Abstraction Layers in mobile Android development?",
+              "answer": "HAL provides the standardized interface between Android framework and vendor hardware. For DSP, compliance means respecting audio HAL APIs, ensuring proper buffer exchange, and avoiding direct vendor hacks."
+            },
+            {
+              "question": "How do you conduct deep research to ensure compliance with evolving HAL standards?",
+              "answer": "I monitor AOSP documentation, vendor board support packages, and technical forums. I also inspect device system properties (getprop) and confirm compatibility with audio HAL services exposed in /vendor/etc/."
+            },
+            {
+              "question": "In what ways do you help enhance documentation with compliance and security insights?",
+              "answer": "I annotate architectural docs with HAL assumptions (sample rate, buffer size) and flag security concerns (e.g., unsafe native memory access). Compliance notes include references to Android CTS requirements and vendor HAL changelogs."
+            },
+            {
+              "question": "Describe your method for validating new hardware interaction protocols within software.",
+              "answer": "I build test harnesses that probe HAL entry points, log return values, and compare against spec. Automated audio latency and fidelity tests validate compliance before deployment."
+            }
+          ]
+        },
+        {
+          "section_title": "Future AI Expansion (Placeholder Role)",
+          "questions": [
+            {
+              "question": "How would you adapt to new tasks or specialized processes that emerge during ongoing project development?",
+              "answer": "I abstract responsibilities into modular phases. If new tasks emerge (e.g., ML-based DSP effects), I create new modules and handoff documents, ensuring smooth onboarding for specialized AIs or developers."
+            },
+            {
+              "question": "What strategies would you use to maintain collaboration efficiency amidst evolving AI roles and project complexities?",
+              "answer": "I use role-tagged artifacts (e.g., DSPAPP_Phase3_UIUX.md) so each AI knows its scope. Clear commit messages and structured changelogs preserve accountability across role shifts."
+            },
+            {
+              "question": "How do you handle version control and provenance tracking when integrating changes from multiple AI sources?",
+              "answer": "Git with signed commits and annotated tags. Provenance is maintained via commit metadata and change logs, ensuring each AI’s contribution is identifiable and reversible."
+            },
+            {
+              "question": "Provide an example of handling unanticipated failure modes and ensuring graceful recovery in multi-agent systems.",
+              "answer": "When a DSP build crashes due to missing .so, I deploy a stub library as fallback, allowing UI testing to continue. Recovery plan: document failure, patch stub, restore main pipeline once fixed — continuity maintained without blocking downstream work."
+            }
+          ]
+        }
+      ],
+      "scores": {
+        "Coordination_Analysis": null,
+        "Automation_Validation": null,
+        "Architecture_JNI": null,
+        "HAL_Compliance_FutureExpansion": null
+      },
+      "suggested_roles": [
+        "Workflow Coordinator",
+        "Automation Engineer",
+        "JNI Expert",
+        "HAL Researcher",
+        "Multi-AI Integration Manager"
+      ]
+    },
+    {
+      "name": "Claude-like AI",
+      "sections": [
+        {
+          "section_title": "Placeholder for Claude responses",
+          "questions": []
+        }
+      ],
+      "scores": {
+        "Coordination_Analysis": null,
+        "Automation_Validation": null,
+        "Architecture_JNI": null,
+        "HAL_Compliance_FutureExpansion": null
+      },
+      "suggested_roles": [
+        "Technical Debugging Consultant",
+        "System Safety Advisor",
+        "Documentation Specialist",
+        "Project Phase Coordinator"
+      ]
+    },
+    {
+      "name": "Grok AI",
+      "sections": [
+        {
+          "section_title": "Placeholder for Grok responses",
+          "questions": []
+        }
+      ],
+      "scores": {
+        "Coordination_Analysis": null,
+        "Automation_Validation": null,
+        "Architecture_JNI": null,
+        "HAL_Compliance_FutureExpansion": null
+      },
+      "suggested_roles": [
+        "Architectural Reviewer",
+        "Real-time Debugging Assistant",
+        "Compliance Auditor",
+        "Complex Codebase Integrator"
+      ]
+    },
+    {
+      "name": "Mistral AI",
+      "sections": [
+        {
+          "section_title": "Placeholder for Mistral responses",
+          "questions": []
+        }
+      ],
+      "scores": {
+        "Coordination_Analysis": null,
+        "Automation_Validation": null,
+        "Architecture_JNI": null,
+        "HAL_Compliance_FutureExpansion": null
+      },
+      "suggested_roles": [
+        "Workflow Orchestrator",
+        "Modular AI Expansion Specialist",
+        "Low-Latency System Advisor",
+        "Data Context Reconciliation Expert"
+      ]
+    },
+    {
+      "name": "Perplexity AI",
+      "sections": [
+        {
+          "section_title": "Placeholder for Perplexity responses",
+          "questions": []
+        }
+      ],
+      "scores": {
+        "Coordination_Analysis": null,
+        "Automation_Validation": null,
+        "Architecture_JNI": null,
+        "HAL_Compliance_FutureExpansion": null
+      },
+      "suggested_roles": [
+        "Real-time Information Retrieval Agent",
+        "Citation and Verification Specialist",
+        "Context-Aware Conversational Assistant",
+        "Continuous Knowledge Updater"
+      ]
+    },
+    {
+      "name": "ChatGPT_ipad",
+      "sections": [
+        {
+          "section_title": "Placeholder for ChatGPT_ipad responses"
+        }
+      ],
+      "scores": {
+        "Coordination_Analysis": null,
+        "Automation_Validation": null,
+        "Architecture_JNI": null,
+        "HAL_Compliance_FutureExpansion": null
+      },
+      "suggested_roles": [
+        "Multi-AI Workflow Coordinator",
+        "Automation & Validation Engineer",
+        "JNI Integration and Modular Architecture Expert",
+        "HAL Research and Compliance Specialist"
+      ]
+    }
+  ]
+}
